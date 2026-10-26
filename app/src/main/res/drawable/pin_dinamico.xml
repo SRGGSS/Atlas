@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- https://developer.android.com/guide/topics/resources/drawable-resource?hl=es-419 -->
+    <item
+        android:id="@+id/capa_color"
+        android:drawable="@drawable/relleno_marcador" />
+
+    <item
+        android:drawable="@drawable/silueta_marcador" />
+
+    <item
+        android:id="@+id/capa_icono"
+        android:drawable="@drawable/icono_parque"
+        android:top="56dp"
+        android:bottom="192dp"
+        android:left="124dp"
+        android:right="124dp" />
+
+</layer-list>
