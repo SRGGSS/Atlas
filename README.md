@@ -8,6 +8,7 @@ Proyecto desarrollado como Trabajo Fin de Grado en Ingeniería Informática (UPV
 <p align="center">
   <img src="docs/diferentes_estilos.png" width="250" />
   <img src="docs/iconos_seleccion.png" width="250" />
+  <img src="docs/output.gif" width="250" />
 </p>
 
 📥 **[Descargar APK](../../releases/latest)**
@@ -46,17 +47,6 @@ La primera versión usaba el SDK de Mapbox, que factura por uso. Para que la app
 
 ### Persistencia
 Todos los datos (marcadores, plantillas, capas, celdas visitadas, puntos de ruta y ajustes) se guardan en **Room**. Esta versión sustituye a una anterior basada en DataStore + Gson.
-
-## Cómo ejecutarlo
-
-1. Clona el repositorio:
-   ```bash
-   git clone https://github.com/<tu-usuario>/atlas.git
-   ```
-2. Ábrelo con Android Studio.
-3. Ejecútalo en un dispositivo o emulador con Android, con SDK mínimo de 24.
-
-La app pide los permisos de ubicación (incluida la ubicación en segundo plano), de reconocimiento de actividad y, si activas la importación, de acceso a fotos.
 
 ## Próximos pasos
 
