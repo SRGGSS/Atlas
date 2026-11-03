@@ -4,15 +4,19 @@
 
 Proyecto desarrollado como Trabajo Fin de Grado en Ingeniería Informática (UPV, 2025–2026). Calificación: 9.
 
+Capturas de las funcionalidades principales:
 
-<p align="center">
-  <img src="docs/diferentes_estilos.png" width="250" />
-  <img src="docs/iconos_seleccion.png" width="250" />
-  <img src="docs/output.gif" width="250" />
-</p>
+![Selección de iconos](docs/iconos_seleccion.png)
 
-📥 **[Descargar APK](../../releases/latest)**
+### 🎨 Diferentes estilos
+La aplicación permite elegir entre distintos estilos visuales para personalizar el resultado.
 
+![Diferentes estilos](docs/diferentes_estilos.png)
+
+### 🚀 Resultado final
+Este es un ejemplo del resultado obtenido tras configurar los diferentes estilos e iconos.
+
+![Resultado final](docs/output.gif)
 ---
 
 ## Funcionalidades
