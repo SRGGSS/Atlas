@@ -6,17 +6,24 @@ Proyecto desarrollado como Trabajo Fin de Grado en Ingeniería Informática (UPV
 
 Capturas de las funcionalidades principales:
 
-![Selección de iconos](docs/iconos_seleccion.png)
+<p align="center">
+  <img src="docs/iconos_seleccion.png" width="400" />
+</p>
 
 ### 🎨 Diferentes estilos
 La aplicación permite elegir entre distintos estilos visuales para personalizar el resultado.
 
-![Diferentes estilos](docs/diferentes_estilos.png)
+<p align="center">
+  <img src="docs/diferentes_estilos.png" width="400" />
+</p>
 
 ### 🚀 Resultado final
 Este es un ejemplo del resultado obtenido tras configurar los diferentes estilos e iconos.
 
-![Resultado final](docs/output.gif)
+<p align="center">
+  <img src="docs/output.gif" width="400" />
+</p>
+
 ---
 
 ## Funcionalidades
