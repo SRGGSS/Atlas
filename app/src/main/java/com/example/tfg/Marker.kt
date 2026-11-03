@@ -1,18 +1,9 @@
 package com.example.tfg
 
-import android.net.Uri
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import com.mapbox.geojson.Point
-import java.text.SimpleDateFormat
+import org.maplibre.geojson.Point
 import java.time.LocalDate
 import java.util.Locale
-import java.util.Date
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.format.DateTimeFormatter
 

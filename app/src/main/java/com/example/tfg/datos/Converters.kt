@@ -2,7 +2,7 @@ package com.example.tfg.datos
 
 import androidx.room.TypeConverter
 import com.example.tfg.ToDo
-import com.mapbox.geojson.Point
+import org.maplibre.geojson.Point
 import com.google.gson.Gson
 import java.time.LocalDate
 import com.google.gson.reflect.TypeToken

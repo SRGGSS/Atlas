@@ -4,14 +4,12 @@
     import android.content.ContentUris
     import androidx.compose.material3.Switch
     import androidx.compose.runtime.Composable
-    import androidx.compose.runtime.mutableStateMapOf
     import android.os.Bundle
     import coil.compose.AsyncImage
     import androidx.activity.ComponentActivity
     import androidx.activity.compose.setContent
     import androidx.compose.foundation.lazy.items
     import androidx.compose.foundation.layout.fillMaxSize
-    import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateOptions
     import androidx.compose.material3.Button
     import androidx.compose.material3.Text
     import androidx.compose.runtime.*
@@ -21,27 +19,13 @@
     import androidx.compose.foundation.layout.padding
     import androidx.compose.runtime.getValue
     import androidx.compose.foundation.layout.width
-    import com.mapbox.maps.plugin.annotation.annotations
-    import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-    import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
-    import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
     import androidx.compose.ui.Modifier
     import androidx.compose.ui.unit.dp
     import androidx.activity.viewModels
-    import com.mapbox.geojson.Point
-    import com.mapbox.maps.extension.compose.MapEffect
-    import com.mapbox.maps.extension.compose.MapboxMap
-    import com.mapbox.maps.viewannotation.viewAnnotationOptions
-    import com.mapbox.maps.viewannotation.geometry
-    import com.mapbox.maps.plugin.viewport.viewport
-    import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
-    import com.mapbox.maps.plugin.locationcomponent.location
-    import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
     import androidx.compose.foundation.layout.Column
     import androidx.compose.foundation.layout.Spacer
     import androidx.compose.foundation.layout.height
     import androidx.compose.material3.AlertDialog
-    import com.mapbox.maps.extension.compose.annotation.ViewAnnotation
     import androidx.compose.material3.OutlinedTextField
     import androidx.compose.material3.TextButton
     import android.content.Context
@@ -94,6 +78,7 @@
     import androidx.compose.material3.HorizontalDivider
     import androidx.compose.material3.IconButton
     import androidx.compose.material3.MaterialTheme
+    import androidx.compose.material3.Surface
     import androidx.compose.ui.Alignment
     import androidx.compose.ui.draw.clip
     import androidx.compose.ui.graphics.asImageBitmap
@@ -119,23 +104,6 @@
     import com.google.android.gms.location.LocationResult
     import com.google.android.gms.location.LocationServices
     import com.google.android.gms.location.Priority
-    import com.mapbox.maps.CameraBoundsOptions
-    import com.mapbox.maps.LayerPosition
-    import com.mapbox.maps.ViewAnnotationAnchor
-    import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotationGroup
-    import com.mapbox.maps.extension.style.layers.addLayerBelow
-    import com.mapbox.maps.extension.style.layers.generated.fillLayer
-    import com.mapbox.maps.extension.style.layers.properties.generated.IconAnchor
-    import com.mapbox.maps.extension.style.sources.addSource
-    import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
-    import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
-    import com.mapbox.maps.extension.style.sources.getSourceAs
-    import com.mapbox.maps.plugin.annotation.AnnotationConfig
-    import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
-    import com.mapbox.maps.plugin.gestures.addOnMapClickListener
-    import com.mapbox.maps.plugin.viewport.ViewportStatus
-    import com.mapbox.maps.plugin.viewport.ViewportStatusObserver
-    import com.mapbox.maps.viewannotation.annotationAnchor
     import kotlinx.coroutines.Dispatchers
     import kotlinx.coroutines.withContext
     import kotlinx.coroutines.delay
@@ -147,6 +115,15 @@
     import java.time.format.DateTimeFormatter
     import java.util.UUID
     import kotlin.String
+    import androidx.compose.ui.viewinterop.AndroidView
+    import org.maplibre.android.MapLibre
+    import org.maplibre.android.camera.CameraPosition
+    import org.maplibre.android.geometry.LatLng
+    import org.maplibre.android.location.OnCameraTrackingChangedListener
+    import org.maplibre.android.maps.MapLibreMap
+    import org.maplibre.android.maps.Style
+    import org.maplibre.android.style.sources.GeoJsonSource
+    import org.maplibre.geojson.Point
 
     class MainActivity : ComponentActivity() {
         val viewModel: MainViewModel by viewModels()
@@ -188,7 +165,9 @@
     
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
-    
+
+            MapLibre.getInstance(this)
+
             setContent {
                 SolicitarPermisosEIniciarDeteccion()
                 PantallaPrincipal()
@@ -242,7 +221,7 @@
         val PinesEnRadio = mutableSetOf<String>()       //Caché visitas (el usuario está dentro)
 
         private fun asegurarPinEnEstilo(    //guarda en style y bitmapscreados y devuelve el string codificado del estilo
-            style: com.mapbox.maps.Style,
+            style: Style,
             colorCompose: Color,
             idIconoPng: Int?
         ): String {
@@ -262,7 +241,7 @@
         }
     
     
-        private fun EstilosGuardados(context: Context, style: com.mapbox.maps.Style) //Carga el estilo de cada Marker
+        private fun EstilosGuardados(context: Context, style: Style) //Carga el estilo de cada Marker
         {
             if(!bitmapsCreados.contains("pin_-16777216_nulo"))  //Para que siempre este
             {
@@ -373,7 +352,7 @@
         private fun aplicarPlantilla(
             plantilla: Plantilla,
             viewModel: MainViewModel,
-            mapboxMapGlobal: com.mapbox.maps.MapboxMap?
+            mapaGlobal: MapLibreMap?
         ) {
             val pin = viewModel.DatosProxPin
     
@@ -386,7 +365,7 @@
                 pin.EstiloIcono = icono
 
 
-                mapboxMapGlobal?.getStyle { style ->
+                mapaGlobal?.getStyle { style ->
                     asegurarPinEnEstilo( style, color, iconos_pin[icono])
                 }
             }
@@ -403,7 +382,7 @@
     
             var ElegirEstiloClase by remember { mutableStateOf(false) }
     
-            var mapboxMapGlobal by remember { mutableStateOf<com.mapbox.maps.MapboxMap?>(null) } //Referencia al mapa
+            var mapaGlobal by remember { mutableStateOf<MapLibreMap?>(null) } //Referencia al mapa
     
             var CrearPin by remember { mutableStateOf(false) }
     
@@ -418,23 +397,21 @@
             var MenuCheckList by remember { mutableStateOf(false) }
     
             var MenuCapas by remember { mutableStateOf(false) }
+
+            val versionCamara = remember { mutableIntStateOf(0) }
     
             var MenuWidgets by remember { mutableStateOf(false) }
     
             val context = LocalContext.current
     
-            var pointTocado by remember { mutableStateOf<PointAnnotation?>(null) }      //Cuando un Pin es tocado (para expandir)
+            var pointTocado by remember { mutableStateOf<String?>(null) }      //Cuando un Pin es tocado (para expandir)
 
             var marcadoresCercanos by remember { mutableStateOf<List<Marker>>(emptyList()) }    //Para ver los otros de la oclusion
             var indiceMarcadorActual by remember { mutableStateOf(0) }
     
-            val Markerenpantalla = remember { mutableStateMapOf<String, Marker>() } //Relaciona el id del PointAnnotation al marker
-    
             var currentlocation by remember { mutableStateOf<Point?>(null) }
     
             var seguir by remember { mutableStateOf(false) }
-    
-            var pointAnnotationManager by remember { mutableStateOf<PointAnnotationManager?>(null) }
     
             val PosicionesMarker = viewModel.miLista
 
@@ -443,28 +420,12 @@
             var permisoUbicacionConcedido by remember {
                 mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
             }
-    
-    
-            val annotationOptions by remember { //Opciones del grupo
-                derivedStateOf {
-                    PosicionesMarker.values
-                        .filter { marker ->
-                            viewModel.CapaActiva <0 || viewModel.Capas.get(viewModel.CapaActiva) == marker.Capa //Filtrado de capa
-                        }
-                        .map { marker ->
-                        PointAnnotationOptions()
-                            .withPoint(marker.Localizacion)
-                            .withIconImage(marker.Estilo)
-                            .withIconSize(0.1)
-                            .withIconAnchor(IconAnchor.BOTTOM)
-                    }
-                }
+
+            var estiloMapa by remember { mutableStateOf<Style?>(null) }
+
+            val marcadoresGeoJson by remember {
+                derivedStateOf<String> { marcadoresAGeoJson(PosicionesMarker.values.filter { marker -> viewModel.CapaActiva < 0 || viewModel.Capas.get(viewModel.CapaActiva) == marker.Capa }) }
             }
-
-
-
-
-
 
 
             val worldBounds = listOf(
@@ -482,6 +443,9 @@
 
 
             var clearedGeometry by remember { mutableStateOf<org.locationtech.jts.geom.Geometry?>(null) }
+
+            val celdasEnNiebla = remember { HashSet<Pair<Int, Int>>() }   // celdas ya incluidas en clearedGeometry
+            var datosIniciales by remember { mutableStateOf(false) }
     
 
             val pendingCells = remember { mutableListOf<Pair<Int, Int>>() }
@@ -532,7 +496,7 @@
     
 
             var fogOfWarGeoJson by remember {
-                mutableStateOf(com.mapbox.geojson.Polygon.fromLngLats(listOf(worldBounds)).toJson())
+                mutableStateOf(org.maplibre.geojson.Polygon.fromLngLats(listOf(worldBounds)).toJson())
             }
 
 
@@ -620,8 +584,9 @@
 
                     val estilo = clase!!.Estilo
                     val (color, icono) = decodificarEstilo(clase!!.Estilo)
-                    mapboxMapGlobal?.getStyle { style ->
-                        asegurarPinEnEstilo( style, color, iconos_pin[icono])
+
+                    withContext(Dispatchers.Main) {
+                        mapaGlobal?.getStyle { style -> asegurarPinEnEstilo(style, color, iconos_pin[icono]) }
                     }
 
                     val capa = clase!!.Capa
@@ -730,17 +695,15 @@
 
                 val visitadasSnapshot = viewModel.visitedCells.toSet()
                 val geometriaPrevia = clearedGeometry
-    
-                val nuevaGeometria = withContext(Dispatchers.Default) {
+
+                val (nuevaGeometria, geoJson) = withContext(Dispatchers.Default) {
                     val cellPolygons = mutableListOf<org.locationtech.jts.geom.Polygon>()
-    
+
                     celdas.forEach { (x, y) ->
                         val centerLon = (x + 0.5) * TAMANO_CELDA
                         val centerLat = (y + 0.5) * TAMANO_CELDA
                         cellPolygons.add(crearCirculoJTS(centerLon, centerLat, RADIO_CIRCULO))
 
-
-                        //solo miro las 8 celdas vecinas -> O(1)
                         for (dx in -1..1) {
                             for (dy in -1..1) {
                                 if (dx == 0 && dy == 0) continue
@@ -758,35 +721,36 @@
                             }
                         }
                     }
-    
+
                     val piezaNueva = gf.createGeometryCollection(cellPolygons.toTypedArray()).union()
                     val fusionTotal = geometriaPrevia?.union(piezaNueva) ?: piezaNueva
+                    val geometria = TopologyPreservingSimplifier.simplify(fusionTotal, 0.000015)
 
-
-                    TopologyPreservingSimplifier.simplify(fusionTotal, 0.000015)
-                }
-    
-                clearedGeometry = nuevaGeometria
-
-                val mundoConAgujeros = mutableListOf(worldBounds)
-                val islasSinRevelar = mutableListOf<List<Point>>()
-
-                fun procesarPoligono(poly: org.locationtech.jts.geom.Polygon) {
-                    mundoConAgujeros.add(poly.exteriorRing.coordinates.map { Point.fromLngLat(it.x, it.y) })
-                    for (i in 0 until poly.numInteriorRing) {
-                        islasSinRevelar.add(poly.getInteriorRingN(i).coordinates.map { Point.fromLngLat(it.x, it.y) })
+                    // Conversion geojson en segundo plano
+                    val mundoConAgujeros = mutableListOf(worldBounds)
+                    val islasSinRevelar = mutableListOf<List<Point>>()
+                    for (i in 0 until geometria.numGeometries) {
+                        val poly = geometria.getGeometryN(i) as org.locationtech.jts.geom.Polygon
+                        mundoConAgujeros.add(poly.exteriorRing.coordinates.map { Point.fromLngLat(it.x, it.y) })
+                        for (r in 0 until poly.numInteriorRing) {
+                            islasSinRevelar.add(poly.getInteriorRingN(r).coordinates.map { Point.fromLngLat(it.x, it.y) })
+                        }
                     }
+                    val allPolygons = mutableListOf<List<List<Point>>>(mundoConAgujeros)
+                    islasSinRevelar.forEach { isla -> allPolygons.add(listOf(isla)) }
+
+                    geometria to org.maplibre.geojson.MultiPolygon.fromLngLats(allPolygons).toJson()
                 }
 
-                for (i in 0 until nuevaGeometria.numGeometries) {
-                    procesarPoligono(nuevaGeometria.getGeometryN(i) as org.locationtech.jts.geom.Polygon)
+
+                clearedGeometry = nuevaGeometria
+                fogOfWarGeoJson = geoJson
+                celdasEnNiebla.addAll(celdas)
+
+                // Guarda en cache
+                withContext(Dispatchers.IO) {
+                    CacheNiebla.guardar(context, nuevaGeometria, celdasEnNiebla.toSet(), geoJson)
                 }
-
-                val allPolygons = mutableListOf<List<List<Point>>>()
-                allPolygons.add(mundoConAgujeros)
-                islasSinRevelar.forEach { isla -> allPolygons.add(listOf(isla)) }
-
-                fogOfWarGeoJson = com.mapbox.geojson.MultiPolygon.fromLngLats(allPolygons).toJson()
 
             }
 
@@ -805,19 +769,29 @@
             LaunchedEffect(Unit) {  //Inicio app
     
                 //viewModel.BorrarTodo(context)
+
+                val cache = withContext(Dispatchers.IO) { CacheNiebla.cargar(context, gf) }
+                if (cache != null) {
+                    clearedGeometry = cache.geometria
+                    celdasEnNiebla.addAll(cache.celdas)
+                    fogOfWarGeoJson = cache.geoJson
+                }
+
                 viewModel.cargarDatos(context)
 
                 procesarPuntosDeRuta()
 
+                val faltan = viewModel.visitedCells.filter { it !in celdasEnNiebla}
                 synchronized(pendingCells) {
-                    pendingCells.addAll(viewModel.visitedCells)
+                    pendingCells.addAll(faltan)
                 }
                 procesarCeldasPendientes()
-    
+
+                datosIniciales = true
             }
 
-            LaunchedEffect(viewModel.miLista.size, mapboxMapGlobal) {   //cada vez que cambia el número de marcadores cargados o cada vez que el mapa pasa a tener referencia
-                mapboxMapGlobal?.getStyle { style -> EstilosGuardados(context, style) }
+            LaunchedEffect(viewModel.miLista.size, estiloMapa) {
+                estiloMapa?.let { EstilosGuardados(context, it) }
             }
 
 
@@ -828,6 +802,7 @@
                         permisoUbicacionConcedido = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
                         (context as? ComponentActivity)?.lifecycleScope?.launch {
+                            if (!datosIniciales) return@launch
                             procesarPuntosDeRuta()
                             procesarCeldasPendientes()
                             if (viewModel.ImportarFotosActivado) {
@@ -853,6 +828,7 @@
                     val callback = object : LocationCallback() {
                         override fun onLocationResult(result: LocationResult) {
                             result.lastLocation?.let { location ->
+                                currentlocation = Point.fromLngLat(location.longitude, location.latitude)
                                 val gridPos = CoordenadasACelda(location.latitude, location.longitude)
                                 if (gridPos !in viewModel.visitedCells) {
                                     viewModel.agregarPunto(context, gridPos)
@@ -872,600 +848,522 @@
             }
 
 
+            fun alTocarMarcador(id: String) {
+                val map = mapaGlobal ?: return
+                val coincidencia = PosicionesMarker[id] ?: return
+                pointTocado = id
+                val pixelTocado = map.projection.toScreenLocation(coincidencia.Localizacion.aLatLng())
+                val cercanos = PosicionesMarker.values.filter { marker ->
+                    if (!(viewModel.CapaActiva < 0 || viewModel.Capas.getOrNull(viewModel.CapaActiva) == marker.Capa)) return@filter false
+                    val px = map.projection.toScreenLocation(marker.Localizacion.aLatLng())
+                    Math.hypot((pixelTocado.x - px.x).toDouble(), (pixelTocado.y - px.y).toDouble()) < 90.0
+                }
+                marcadoresCercanos = cercanos
+                indiceMarcadorActual = cercanos.indexOf(coincidencia).coerceAtLeast(0)
+            }
 
-            val mapViewportState = rememberMapViewportState {       //Visión inicial
-                setCameraOptions {
-                    zoom(14.0)
-                    center(Point.fromLngLat(-0.37, 39.47)) //Da igual, luego sigue a la camara
-                    pitch(0.0)
-                    bearing(0.0)
+
+            val mapView = rememberMapViewConCicloDeVida()
+            val opacidad = if (viewModel.EstiloSelecc == 1) 0.3f else 0.15f
+
+            LaunchedEffect(mapView) {
+                mapView.getMapAsync { map ->
+                    map.cameraPosition = CameraPosition.Builder()
+                        .target(LatLng(39.47, -0.37)).zoom(14.0).tilt(0.0).bearing(0.0).build()
+                    map.setMinZoomPreference(1.0)
+                    map.uiSettings.isCompassEnabled = false
+                    map.uiSettings.isLogoEnabled = false
+                    map.uiSettings.isAttributionEnabled = true   // ver nota abajo
+
+                    map.addOnCameraMoveListener { versionCamara.intValue++ }
+                    map.addOnMapClickListener { punto ->
+                        if (CrearPin) {
+                            viewModel.DatosProxPin.NextPointLocation = Point.fromLngLat(punto.longitude, punto.latitude)
+                            viewModel.mostrarDialogo = true
+                            CrearPin = false
+                            return@addOnMapClickListener true
+                        }
+                        val id = idMarcadorEn(map, punto) ?: return@addOnMapClickListener false
+                        alTocarMarcador(id)
+                        true
+                    }
+                    map.locationComponent.addOnCameraTrackingChangedListener(object : OnCameraTrackingChangedListener {
+                        override fun onCameraTrackingDismissed() { seguir = false }   // = ViewportStatus.Idle
+                        override fun onCameraTrackingChanged(currentMode: Int) {}
+                    })
+                    mapaGlobal = map
                 }
             }
+
+            LaunchedEffect(mapaGlobal, viewModel.EstiloSelecc) {   // carga / cambio de estilo
+                val map = mapaGlobal ?: return@LaunchedEffect
+                estiloMapa = null
+                map.setStyle(Style.Builder().fromUri(viewModel.OpcionesEstilos[viewModel.EstiloSelecc])) { style ->
+                    bitmapsCreados.clear()
+                    EstilosGuardados(context, style)
+                    anadirCapasAtlas(style, fogOfWarGeoJson, marcadoresGeoJson, opacidad)
+                    estiloMapa = style
+                }
+            }
+
+            LaunchedEffect(estiloMapa, permisoUbicacionConcedido) {   // puck (se activa una vez; sobrevive a cambios de estilo)
+                val map = mapaGlobal ?: return@LaunchedEffect
+                val style = estiloMapa ?: return@LaunchedEffect
+                if (permisoUbicacionConcedido && !map.locationComponent.isLocationComponentActivated) {
+                    activarUbicacion(context, map, style)
+                    seguirUbicacion(map, inmediato = true)
+                }
+            }
+
+            LaunchedEffect(estiloMapa, fogOfWarGeoJson) {
+                estiloMapa?.getSourceAs<GeoJsonSource>(MapaIds.FUENTE_NIEBLA)?.setGeoJson(fogOfWarGeoJson)
+            }
+            LaunchedEffect(estiloMapa, marcadoresGeoJson) {
+                estiloMapa?.getSourceAs<GeoJsonSource>(MapaIds.FUENTE_MARCADORES)?.setGeoJson(marcadoresGeoJson)
+            }
+            LaunchedEffect(seguir, estiloMapa) {
+                if(mapaGlobal==null)
+                {
+                    return@LaunchedEffect
+                }
+                val map = mapaGlobal!!
+
+                if (seguir && estiloMapa != null) seguirUbicacion(map)
+            }
+
     
             Box(modifier = Modifier.fillMaxSize()) {
-                MapboxMap(
-                    Modifier.fillMaxSize(),
-                    mapViewportState = mapViewportState,
-                    scaleBar = { },
-    
-                    compass = { },
-    
-                    logo = { },
-    
-                    attribution = { },
-                    )
-                {
-    
 
-                    MapEffect(Unit) { mapView ->
-    
-                        mapboxMapGlobal = mapView.mapboxMap
-    
-                        val observer = ViewportStatusObserver { from, to, reason ->
-                            // Si el estado pasa a Idle se ha roto el seguimiento
-                            if (to == ViewportStatus.Idle) {
-                                seguir = false
-                            }
-                        }
-    
-                        mapView.viewport.addStatusObserver(observer)
-    
-    
-                        val annotationApi = mapView.annotations //Point Manager
-                        pointAnnotationManager = annotationApi.createPointAnnotationManager()
-    
-                        mapView.mapboxMap.addOnMapClickListener {point ->
-    
-    
-                            if(CrearPin)
-                            {
-                                viewModel.DatosProxPin.NextPointLocation = point
-                                viewModel.mostrarDialogo = true
-                                CrearPin = false;
-                            }
-    
-                            true
-                        }
-    
-    
-    
-    
-                        pointAnnotationManager?.addClickListener { annotation ->
-    
-                            pointTocado = annotation
-    
-                            true
-                        }
+                AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
 
-
-                        mapView.location.updateSettings {
-                            locationPuck = createDefault2DPuck(withBearing = false)
-                            enabled = true
-                            //puckBearing = PuckBearing.COURSE
-                            //puckBearingEnabled = true
-                        }
-    
-                        mapView.location.addOnIndicatorPositionChangedListener { point ->
-                            currentlocation = point
-                        }
-    
-    
-                        val cameraBounds = CameraBoundsOptions.Builder()    //Zoom minimo para que no haga la cosa esa rara cuando haces mucho zoom out y te lleva al polo
-                            .minZoom(1.0)
-                            .build()
-                        mapView.mapboxMap.setBounds(cameraBounds)
-    
-    
-                        val opciones = FollowPuckViewportStateOptions.Builder()
-                            .pitch(0.0)
-                            .zoom(16.0)
-                            .build()
-
-                        val estadoSeguimiento = mapView.viewport.makeFollowPuckViewportState(opciones)
-                        val transicionInmediata = mapView.viewport.makeImmediateViewportTransition()
-    
-                        mapView.viewport.transitionTo(estadoSeguimiento, transicionInmediata)
-    
-    
-                    }
-
-                    var opacidad = if(viewModel.EstiloSelecc == 1) 0.3 else 0.15    //El estilo azul necesita niebla más oscura para que se vea bien
-
-                    MapEffect(viewModel.EstiloSelecc) { mapView ->
-                        mapView.getMapboxMap().loadStyleUri(viewModel.OpcionesEstilos[viewModel.EstiloSelecc])
-    
-                        mapView.mapboxMap.getStyle { style ->
-                            bitmapsCreados.clear()
-    
-                            style.addSource(geoJsonSource("fog-source") { data(fogOfWarGeoJson) })
-                            style.addLayerBelow(
-                                fillLayer("fog-layer", "fog-source") {
-                                    fillColor("#2A2A2A")
-                                    fillOpacity(opacidad)
-                                },
-                                "mapbox-location-indicator-layer"
-                            )
-                            style.moveStyleLayer("capa-marcadores", LayerPosition("fog-layer", null, null))
-                        }
-                    }
-
-                    MapEffect(seguir) { mapView ->
-                        if (seguir) {
-                            val opciones = FollowPuckViewportStateOptions.Builder()
-                                .pitch(0.0)
-                                .zoom(16.0)
-                                .build()
-
-                            val estadoSeguimiento = mapView.viewport.makeFollowPuckViewportState(opciones)
-                            mapView.viewport.transitionTo(estadoSeguimiento)
-                        }
-                    }
-
-                    MapEffect(fogOfWarGeoJson) { mapView ->
-                        mapView.mapboxMap.getStyle { style ->
-                            val sourceId = "fog-source"
-                            val source = style.getSourceAs<GeoJsonSource>(sourceId)
-    
-                            if (source != null) {   // Si la fuente de datos existe en el mapa
-                                source.data(fogOfWarGeoJson)
-                            } else {                // Si no
-                                style.addSource(geoJsonSource(sourceId) { data(fogOfWarGeoJson) })
-    
-                                style.addLayerBelow(
-                                    fillLayer("fog-layer", sourceId) {
-                                        fillColor("#2A2A2A")
-                                        fillOpacity(opacidad)
-                                    },
-                                    "mapbox-location-indicator-layer"   // ID fijo del puck en Android
-                                )
-                                style.moveStyleLayer("capa-marcadores", LayerPosition("fog-layer", null, null))
-    
-                            }
-                        }
-                    }
-    
-    
-                    PointAnnotationGroup(
-                        annotations = annotationOptions,
-                        annotationConfig = AnnotationConfig(layerId = "capa-marcadores"),   //Para luego hacer que se dibujen por encima de la niebla
-    
-                        onClick = { annotation ->
-                            pointTocado = annotation
-
-                            val coincidencia = PosicionesMarker.values.find {   //El tocado
-                                it.Localizacion.longitude() == annotation.point.longitude() &&
-                                it.Localizacion.latitude() == annotation.point.latitude()
-                            }
-                            if (coincidencia != null) {
-                                val pixelTocado = mapboxMapGlobal?.pixelForCoordinate(coincidencia.Localizacion)
-
-                                if (pixelTocado != null) {  //Cogemos los markers cercanos ocultados por oclusion
-                                    val cercanos = PosicionesMarker.values.filter { marker ->
-
-                                        if (!(viewModel.CapaActiva < 0 || viewModel.Capas.getOrNull(viewModel.CapaActiva) == marker.Capa)) return@filter false
-
-                                        val pixelMarker = mapboxMapGlobal?.pixelForCoordinate(marker.Localizacion)
-
-                                        if (pixelMarker != null) { //Teorema de Pitágoras
-                                            val dx = pixelTocado.x - pixelMarker.x
-                                            val dy = pixelTocado.y - pixelMarker.y
-                                            val distanciaPixeles = Math.hypot(dx, dy)
-
-                                            // ir ajustando
-                                            distanciaPixeles < 90.0
-                                        } else {
-                                            false
-                                        }
-                                    }
-
-                                    marcadoresCercanos = cercanos
-                                    indiceMarcadorActual = cercanos.indexOf(coincidencia).coerceAtLeast(0)
-                                }
-                            }
-                            true
-                        }
-    
-    
-                    )
-                    {
-                        iconPadding = 5.0
-                    }
-
-                    if (pointTocado != null && marcadoresCercanos.isNotEmpty()) {
-
-                        val marker = marcadoresCercanos.getOrNull(indiceMarcadorActual)
-
-                        if (marker != null) {
-                            ViewAnnotation(
-                                options = viewAnnotationOptions {
-                                    marker?.Localizacion?.let { loc -> geometry(loc)}
-                                    ignoreCameraPadding(true)
-                                    allowOverlapWithPuck(true)
-                                    allowOverlap(true)
-                                    annotationAnchor { anchor(ViewAnnotationAnchor.TOP)}
-                                }
+                if (pointTocado != null && marcadoresCercanos.isNotEmpty()) {
+                    val marker = marcadoresCercanos.getOrNull(indiceMarcadorActual)
+                    if (marker != null) {
+                        Box(Modifier.anclarEnMapa(mapaGlobal, marker.Localizacion.aLatLng()) { versionCamara.intValue }) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                // flecha izquierda
+                                Box(
+                                    modifier = Modifier.size(44.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    // flecha izquierda
+                                    if (marcadoresCercanos.size > 1 && indiceMarcadorActual > 0) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.flecha2),
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .graphicsLayer {
+                                                    scaleX = -1f
+                                                }
+                                                .clickable {indiceMarcadorActual--}
+                                        )
+                                    }
+                                }
+
+
+                                Column(
+                                    modifier = Modifier
+                                        .widthIn(min = 120.dp, max = 220.dp)
+                                        .heightIn(max = 1000.dp)
+                                        .background(
+                                            color = Color.White,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = Color.Black,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    // Fila Superior: Fecha y botón Cerrar (X)
                                     Box(
-                                        modifier = Modifier.size(44.dp),
-                                        contentAlignment = Alignment.Center
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        if (marcadoresCercanos.size > 1 && indiceMarcadorActual > 0) {
-                                            Image(
-                                                painter = painterResource(id = R.drawable.flecha2),
-                                                contentDescription = "",
-                                                modifier = Modifier
-                                                    .size(38.dp)
-                                                    .graphicsLayer {
-                                                        scaleX = -1f
+                                        /*Text(
+                                            text = marker.FechaString(),
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFB2B1B1),
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.align(Alignment.CenterStart)
+                                        )*/
+                                        //Botón dirección
+                                        Image(
+                                            painter = painterResource(id = R.drawable.navegar),
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .align(Alignment.TopStart)
+                                                .size(24.dp)
+                                                .clickable
+                                                {   //https://developer.android.com/guide/components/google-maps-intents?hl=es-419#kotlin_2
+                                                    val latitude = marker.Localizacion.latitude()
+                                                    val longitude = marker.Localizacion.longitude()
+
+
+                                                    val gmmIntentUri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude(Ubicacion)")
+                                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                                    mapIntent.setPackage("com.google.android.apps.maps")
+                                                    mapIntent.resolveActivity(packageManager)?.let {
+                                                        startActivity(mapIntent)
                                                     }
-                                                    .clickable {indiceMarcadorActual--}
-                                            )
-                                        }
+                                                }
+                                        )
+
+
+                                        Text(
+                                            text = marker.Nombre,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp,
+                                            modifier = Modifier
+                                                .align(Alignment.Center)
+                                                .padding(bottom = 4.dp)
+                                        )
+
+                                        Image(
+                                            painter = painterResource(id = R.drawable.quitar_menu),
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .size(28.dp)
+                                                .clickable {pointTocado = null}
+                                        )
                                     }
 
+                                    if (marker.ImagenURL != null) {
+                                        AsyncImage(
+                                            model = marker.ImagenURL,
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .padding(horizontal = 4.dp, vertical = 4.dp)
+                                                .fillMaxWidth()
+                                                .aspectRatio(1f),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    else
+                                    {
+                                        Spacer(modifier = Modifier.height(20.dp))
+                                    }
 
-                                    Column(
-                                        modifier = Modifier
-                                            .widthIn(min = 120.dp, max = 220.dp)
-                                            .heightIn(max = 1000.dp)
-                                            .background(
-                                                color = Color.White,
-                                                shape = RoundedCornerShape(8.dp)
+                                    if (marker.Texto.length > 0) {
+                                        Text(
+                                            text = marker.Texto,
+                                            fontSize = 14.sp,
+                                            textAlign = TextAlign.Left,
+                                            modifier = Modifier.padding(
+                                                top = 4.dp,
+                                                bottom = 4.dp
                                             )
-                                            .border(
-                                                width = 1.dp,
-                                                color = Color.Black,
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .padding(8.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        // Fila Superior: Fecha y botón Cerrar (X)
-                                        Box(
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Text(
-                                                text = marker.FechaString(),
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFB2B1B1),
-                                                fontSize = 11.sp,
-                                                modifier = Modifier.align(Alignment.CenterStart)
-                                            )
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                    }
 
-                                            Text(
-                                                text = marker.Nombre,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 18.sp,
-                                                modifier = Modifier
-                                                    .align(Alignment.Center)
-                                                    .padding(bottom = 4.dp)
-                                            )
-
-                                            Image(
-                                                painter = painterResource(id = R.drawable.cerrar),
-                                                contentDescription = "",
-                                                modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .size(18.dp)
-                                                    .clickable {pointTocado = null}
-                                            )
-                                        }
-
-                                        if (marker.ImagenURL != null) {
-                                            AsyncImage(
-                                                model = marker.ImagenURL,
-                                                contentDescription = "",
-                                                modifier = Modifier
-                                                    .padding(horizontal = 4.dp, vertical = 4.dp)
-                                                    .fillMaxWidth()
-                                                    .aspectRatio(1f),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                        }
-                                        else
-                                        {
-                                            Spacer(modifier = Modifier.height(20.dp))
-                                        }
-
-                                        if (marker.Texto.length > 0) {
-                                            Text(
-                                                text = marker.Texto,
-                                                fontSize = 14.sp,
-                                                textAlign = TextAlign.Left,
-                                                modifier = Modifier.padding(
-                                                    top = 4.dp,
-                                                    bottom = 4.dp
-                                                )
-                                            )
-                                        } else {
-                                            Spacer(modifier = Modifier.height(16.dp))
-                                        }
-
-                                        if (marker.Visitas >= 0) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .padding(top = 8.dp)
-                                                    .border(
-                                                        1.dp,
-                                                        Color(0xFF242424),
-                                                        RoundedCornerShape(8.dp)
-                                                    )
-                                                    .background(
-                                                        Color(0xFF4d4d4d),
-                                                        RoundedCornerShape(8.dp)
-                                                    )
-                                                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = "${marker.Visitas} visitas",
-                                                    fontSize = 16.sp,
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    color = Color.White
-                                                )
-                                            }
-                                        }
-
-                                        if (marker.Puntuacion >= 0) {
-                                            var puntuacion by remember { mutableStateOf(marker.Puntuacion) }
-                                            PuntuacionEstrellas(
-                                                puntuacion = puntuacion,
-                                                onPuntuacionChange = { nueva ->
-                                                    puntuacion = nueva
-                                                    marker.Puntuacion = nueva
-                                                    viewModel.agregarElemento(context, marker)
-                                                }
-                                            )
-                                        }
-
-                                        if (marker.ToDos.size > 0) {
-                                            CheckList(
-                                                marker.ToDos,
-                                                onChecked = { lista ->
-                                                    marker.ToDos = lista
-                                                    viewModel.agregarElemento(context, marker)
-                                                }
-                                            )
-                                        }
-
-                                        if (marker.Cualidades.contains("Clima")) {
-                                            ClimaWidget(
-                                                marker.Localizacion.latitude(),
-                                                marker.Localizacion.longitude()
-                                            )
-                                        }
-
-                                        // FILA INFERIOR: EDITAR, X de Y, BORRAR
+                                    if (marker.Visitas >= 0) {
                                         Row(
                                             modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(top = 10.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                .padding(top = 8.dp)
+                                                .border(
+                                                    1.dp,
+                                                    Color(0xFF242424),
+                                                    RoundedCornerShape(8.dp)
+                                                )
+                                                .background(
+                                                    Color(0xFF4d4d4d),
+                                                    RoundedCornerShape(8.dp)
+                                                )
+                                                .padding(horizontal = 10.dp, vertical = 5.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            // Editar
-                                            Image(
-                                                painter = painterResource(id = R.drawable.editar),
-                                                contentDescription = "Editar",
-                                                modifier = Modifier
-                                                    .size(22.dp)
-                                                    .clickable {
-                                                        val (color, icono) = decodificarEstilo(
-                                                            marker.Estilo
-                                                        )
-                                                        viewModel.EditandoPin = marker.ID
-                                                        viewModel.DatosProxPin = MiObjeto(
-                                                            Texto = marker.Texto,
-                                                            NextDate = marker.Fecha,
-                                                            Titulo = marker.Nombre,
-                                                            UriImagen = marker.ImagenURL?.toUri(),
-                                                            NextPointLocation = marker.Localizacion,
-                                                            ListaCualidades = marker.Cualidades,
-                                                            ListaChecklist = marker.ToDos,
-                                                            EstiloPredeterminado = marker.Estilo
-                                                        )
-                                                        viewModel.DatosProxPin.Capa = marker.Capa
-                                                        viewModel.DatosProxPin.ColorEstilo = color
-                                                        viewModel.DatosProxPin.EstiloIcono = icono
-                                                        pointTocado = null
-                                                        viewModel.mostrarDialogo = true
-                                                    }
-                                            )
-
-
-                                            if (marcadoresCercanos.size > 1) {
-                                                Text(
-                                                    text = "${indiceMarcadorActual + 1} de ${marcadoresCercanos.size}",
-                                                    fontSize = 12.sp,
-                                                    color = Color.Gray,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-
-                                            // Borrar
-                                            Image(
-                                                painter = painterResource(id = R.drawable.papelera),
-                                                contentDescription = "Eliminar",
-                                                modifier = Modifier
-                                                    .size(22.dp)
-                                                    .clickable {
-                                                        marker.ImagenURL?.let { ruta ->
-                                                            var indUlt = ruta.lastIndexOf('/')
-                                                            var Despues = ruta.substring(indUlt + 1)
-                                                            if (Despues.take(16) == "NuestraImCopiada") {
-                                                                val fdelete = File(ruta)
-                                                                if (fdelete.exists()) fdelete.delete()
-                                                            }
-                                                        }
-                                                        viewModel.eliminarElemento(context, marker)
-                                                        Markerenpantalla.remove(pointTocado!!.id)
-                                                        pointTocado = null
-                                                    }
+                                            Text(
+                                                text = "${marker.Visitas} visitas",
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color.White
                                             )
                                         }
                                     }
 
+                                    if (marker.Puntuacion >= 0) {
+                                        var puntuacion by remember { mutableStateOf(marker.Puntuacion) }
+                                        PuntuacionEstrellas(
+                                            puntuacion = puntuacion,
+                                            onPuntuacionChange = { nueva ->
+                                                puntuacion = nueva
+                                                marker.Puntuacion = nueva
+                                                viewModel.agregarElemento(context, marker)
+                                            }
+                                        )
+                                    }
 
+                                    if (marker.ToDos.size > 0) {
+                                        CheckList(
+                                            marker.ToDos,
+                                            onChecked = { lista ->
+                                                marker.ToDos = lista
+                                                viewModel.agregarElemento(context, marker)
+                                            }
+                                        )
+                                    }
 
-                                    // Flecha derecha
+                                    if (marker.Cualidades.contains("Clima")) {
+                                        ClimaWidget(
+                                            marker.Localizacion.latitude(),
+                                            marker.Localizacion.longitude()
+                                        )
+                                    }
 
-                                    Box(
-                                        modifier = Modifier.size(44.dp),
-                                        contentAlignment = Alignment.Center
+                                    // FILA INFERIOR: EDITAR, X de Y, BORRAR
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 10.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        if (marcadoresCercanos.size > 1 && indiceMarcadorActual < marcadoresCercanos.size - 1) {
-                                            Image(
-                                                painter = painterResource(id = R.drawable.flecha2),
-                                                contentDescription = "Eliminar",
-                                                modifier = Modifier
-                                                    .size(38.dp)
-                                                    .clickable {indiceMarcadorActual++}
-                                            )
-                                        }
+                                        // Editar
+                                        Image(
+                                            painter = painterResource(id = R.drawable.editar),
+                                            contentDescription = "Editar",
+                                            modifier = Modifier
+                                                .size(22.dp)
+                                                .clickable {
+                                                    val (color, icono) = decodificarEstilo(
+                                                        marker.Estilo
+                                                    )
+                                                    viewModel.EditandoPin = marker.ID
+                                                    viewModel.DatosProxPin = MiObjeto(
+                                                        Texto = marker.Texto,
+                                                        NextDate = marker.Fecha,
+                                                        Titulo = marker.Nombre,
+                                                        UriImagen = marker.ImagenURL?.toUri(),
+                                                        NextPointLocation = marker.Localizacion,
+                                                        ListaCualidades = marker.Cualidades,
+                                                        ListaChecklist = marker.ToDos,
+                                                        EstiloPredeterminado = marker.Estilo
+                                                    )
+                                                    viewModel.DatosProxPin.Capa = marker.Capa
+                                                    viewModel.DatosProxPin.ColorEstilo = color
+                                                    viewModel.DatosProxPin.EstiloIcono = icono
+                                                    pointTocado = null
+                                                    viewModel.mostrarDialogo = true
+                                                }
+                                        )
+
+
+
+                                        Text(
+                                            text = marker.FechaString(),
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFB2B1B1),
+                                            fontSize = 11.sp
+                                        )
+
+
+                                        // Borrar
+                                        Image(
+                                            painter = painterResource(id = R.drawable.papelera),
+                                            contentDescription = "Eliminar",
+                                            modifier = Modifier
+                                                .size(22.dp)
+                                                .clickable {
+                                                    marker.ImagenURL?.let { ruta ->
+                                                        var indUlt = ruta.lastIndexOf('/')
+                                                        var Despues = ruta.substring(indUlt + 1)
+                                                        if (Despues.take(16) == "NuestraImCopiada") {
+                                                            val fdelete = File(ruta)
+                                                            if (fdelete.exists()) fdelete.delete()
+                                                        }
+                                                    }
+                                                    viewModel.eliminarElemento(context, marker)
+                                                    pointTocado = null
+                                                }
+                                        )
+                                    }
+
+                                    if (marcadoresCercanos.size > 1) {
+                                        Text(
+                                            text = "${indiceMarcadorActual + 1} de ${marcadoresCercanos.size}",
+                                            fontSize = 12.sp,
+                                            color = Color.Gray,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                }
+
+
+
+                                // Flecha derecha
+
+                                Box(
+                                    modifier = Modifier.size(44.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (marcadoresCercanos.size > 1 && indiceMarcadorActual < marcadoresCercanos.size - 1) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.flecha2),
+                                            contentDescription = "Eliminar",
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clickable {indiceMarcadorActual++}
+                                        )
                                     }
                                 }
                             }
                         }
                     }
-    
                 }
-    
-                Row(
-                    modifier = Modifier
+
+
+                Row(    //Bottom Bar
+                    Modifier.fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 25.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(bottom = 35.dp, start = 20.dp, end = 20.dp),
+                    Arrangement.SpaceBetween
                 )
                 {
-                    Image(
-                        painter = painterResource(id = R.drawable.flecha2),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .graphicsLayer {
-                                scaleX = -1f
-                            }
-                            .clickable {
-                                if (viewModel.CapaActiva < 0) {
-                                    viewModel.CapaActiva = viewModel.Capas.size - 1
-                                } else {
-                                    viewModel.CapaActiva--
-                                }
-                            }
-                    )
-    
-    
-                    Box(
-                        contentAlignment = Alignment.Center
+
+                    IconButton(
+                        onClick = { MostrarAjustes = true },
+                        modifier = Modifier.size(55.dp)
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.que_capa),
+                            painter = painterResource(id = R.drawable.ajustes),
                             contentDescription = null,
-                            modifier = Modifier
-                                .size(110.dp)
-                        )
-    
-                        val texto = if(viewModel.CapaActiva<0) "Todas" else viewModel.Capas.get(viewModel.CapaActiva)
-                        Text(
-                            text = texto,
-                            color = Color.White,
-                            fontSize = 16.sp
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
-    
-                    Image(
-                        painter = painterResource(id = R.drawable.flecha2),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clickable {
-                                if (viewModel.CapaActiva >= viewModel.Capas.size - 1) {
-                                    viewModel.CapaActiva = -1
-                                } else {
-                                    viewModel.CapaActiva++
-                                }
-                            }
+
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color = Color.White,
+                        shadowElevation = 20.dp
                     )
+                    {
+                        Row(
+                            modifier = Modifier.padding(
+                                horizontal = 6.dp,
+                                vertical = 10.dp
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        )
+                        {
+                            Image(
+                                painter = painterResource(id = R.drawable.flecha2),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .graphicsLayer {
+                                        scaleX = -1f
+                                    }
+                                    .clickable {
+                                        if (viewModel.CapaActiva < 0) {
+                                            viewModel.CapaActiva = viewModel.Capas.size - 1
+                                        } else {
+                                            viewModel.CapaActiva--
+                                        }
+                                    }
+                            )
+
+
+                            Box(
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.que_capa),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .width(110.dp)
+                                )
+
+                                val texto = if(viewModel.CapaActiva<0) "Todas" else viewModel.Capas.get(viewModel.CapaActiva)
+                                Text(
+                                    text = texto,
+                                    color = Color.White,
+                                    fontSize = 16.sp
+                                )
+                            }
+
+                            Image(
+                                painter = painterResource(id = R.drawable.flecha2),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clickable {
+                                        if (viewModel.CapaActiva >= viewModel.Capas.size - 1) {
+                                            viewModel.CapaActiva = -1
+                                        } else {
+                                            viewModel.CapaActiva++
+                                        }
+                                    }
+                            )
+                        }
+                    }
+                    if(!CrearPin)
+                    {
+                        IconButton(
+                            onClick = {
+                                CrearPin=true
+                            },
+                            modifier = Modifier.size(55.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.agregar),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
+                    else
+                    {
+                        IconButton(
+                            onClick = {
+                                val loc = mapaGlobal?.locationComponent?.takeIf { it.isLocationComponentActivated }?.lastKnownLocation
+                                viewModel.DatosProxPin.NextPointLocation = loc?.let { Point.fromLngLat(it.longitude, it.latitude) } ?: currentlocation
+                                viewModel.mostrarDialogo = true;
+                                CrearPin = false;
+                            },
+                            modifier = Modifier.size(55.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.pinaqui),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
                 }
 
 
-                if(!CrearPin)
-                {
-                    IconButton(
-                        onClick = {
-                            CrearPin=true
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 100.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.agregar),
-                            contentDescription = null,
-                            modifier = Modifier.size(120.dp)
-                        )
-                    }
-                }
-                else
-                {
-                    IconButton(
-                        onClick = {
-                            viewModel.DatosProxPin.NextPointLocation = currentlocation;
-                            viewModel.mostrarDialogo = true;
-                            CrearPin = false;
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 100.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.pinaqui),
-                            contentDescription = null,
-                            modifier = Modifier.size(120.dp)
-                        )
-                    }
-                }
-    
-    
-    
+
+
+
+
                 if(CrearPin)
                 {
                     IconButton(
                         onClick = { CrearPin = false },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(top = 32.dp)
+                            .padding(top= 32.dp, end = 12.dp)
+                            .size(42.dp)
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.cerrar),
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
-                else
-                {
-                    IconButton(
-                        onClick = { MostrarAjustes = true },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 32.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ajustes),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
+
 
 
                 progresoImportacion?.let { (procesadas, total) ->
@@ -1487,12 +1385,13 @@
                         onClick = { seguir = true },
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(top = 32.dp)
+                            .padding(top= 32.dp, start = 12.dp)
+                            .size(42.dp)
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.brujula),
                             contentDescription = null,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(42.dp)
                         )
                     }
                 }
@@ -1626,7 +1525,7 @@
                         onIconoChange = { viewModel.DatosProxPin.EstiloIcono = it },
                         onDismiss = { ElegirEstilo = false; viewModel.mostrarDialogo = true },
                         onAccept = {
-                            mapboxMapGlobal?.getStyle { style ->
+                            mapaGlobal?.getStyle { style ->
                                 val nombreEstiloFinal = asegurarPinEnEstilo( style, viewModel.DatosProxPin.ColorEstilo, iconos_pin[viewModel.DatosProxPin.EstiloIcono])
                                 viewModel.DatosProxPin.EstiloPredeterminado = nombreEstiloFinal
                             }
@@ -1644,7 +1543,7 @@
                         onIconoChange = { viewModel.DatosProxClase.EstiloIcono = it },
                         onDismiss = { ElegirEstiloClase = false; CrearClases = true },
                         onAccept = {
-                            mapboxMapGlobal?.getStyle { style ->
+                            mapaGlobal?.getStyle { style ->
                                 val nombreEstiloFinal = asegurarPinEnEstilo( style, viewModel.DatosProxClase.ColorEstilo, iconos_pin[viewModel.DatosProxClase.EstiloIcono])
                                 viewModel.DatosProxClase.EstiloPredeterminado = nombreEstiloFinal
                             }
@@ -1703,7 +1602,7 @@
                             }
                         },
                         onCrear = { MenuClases = false; CrearClases = true },
-                        mapboxMapGlobal = mapboxMapGlobal
+                        mapaGlobal = mapaGlobal
                     )
                 }
 
@@ -1780,7 +1679,7 @@
         fun MenuClases(
             onDismiss: () -> Unit,
             onCrear: () -> Unit,
-            mapboxMapGlobal: com.mapbox.maps.MapboxMap?
+            mapaGlobal: MapLibreMap?
     
         )
         {
@@ -1881,7 +1780,7 @@
                                                     aplicarPlantilla(
                                                         clase,
                                                         viewModel,
-                                                        mapboxMapGlobal
+                                                        mapaGlobal
                                                     )
                                                     onDismiss()
                                                 }

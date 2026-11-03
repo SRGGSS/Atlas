@@ -7,7 +7,7 @@
     import androidx.lifecycle.ViewModel
     import androidx.lifecycle.viewModelScope
     import androidx.datastore.preferences.preferencesDataStore
-    import com.mapbox.geojson.Point
+    import org.maplibre.geojson.Point
     import kotlinx.coroutines.launch
     import android.net.Uri
     import androidx.compose.runtime.mutableStateMapOf
@@ -20,6 +20,17 @@
     import com.example.tfg.datos.VisitedCellEntity
     import kotlinx.coroutines.flow.first
     import java.time.LocalDate
+    import org.locationtech.jts.geom.Geometry
+    import org.locationtech.jts.geom.GeometryFactory
+    import org.locationtech.jts.io.WKBReader
+    import org.locationtech.jts.io.WKBWriter
+    import java.io.BufferedInputStream
+    import java.io.BufferedOutputStream
+    import java.io.DataInputStream
+    import java.io.DataOutputStream
+    import java.io.File
+    import java.io.FileInputStream
+    import java.io.FileOutputStream
 
     val Context.dataStore by preferencesDataStore(name = "settings")
 
@@ -67,7 +78,7 @@
         var CapaActiva by mutableStateOf(-1)
         var DatosProxPin = MiObjeto()
 
-        val OpcionesEstilos = listOf("mapbox://styles/malaneu/cmrrmbj47001c01s29wkvf13l", "mapbox://styles/malaneu/cmufz41mj002g01qvgt0p8hin","mapbox://styles/malaneu/cmt5sra9l00a601s36svlavww")
+        val OpcionesEstilos = listOf("asset://estilo2.json", "asset://estilo1.json", "asset://estilo3.json")
 
 
         //Opciones
@@ -260,6 +271,54 @@
                 dao.borrarTodosLosMarcadores()
                 dao.borrarTodasLasClases()
                 dao.borrarTodasLasCeldas()
+            }
+        }
+    }
+
+    object CacheNiebla {    //Para no recalcular la niebla cada vez que se abre la aplicacion (Hecho con IA)
+
+        private const val ARCHIVO = "niebla_cache.bin"
+        private const val VERSION = 1
+        class Datos(val geometria: Geometry, val celdas: Set<Pair<Int, Int>>, val geoJson: String)
+
+        fun guardar(context: Context, geometria: Geometry, celdas: Set<Pair<Int, Int>>, geoJson: String) {
+            val tmp = File(context.filesDir, "$ARCHIVO.tmp")
+            DataOutputStream(BufferedOutputStream(FileOutputStream(tmp))).use { out ->
+                out.writeInt(VERSION)
+
+                val wkb = WKBWriter().write(geometria)
+                out.writeInt(wkb.size)
+                out.write(wkb)
+
+                out.writeInt(celdas.size)
+                celdas.forEach { (x, y) -> out.writeInt(x); out.writeInt(y) }
+
+                val json = geoJson.toByteArray(Charsets.UTF_8)
+                out.writeInt(json.size)
+                out.write(json)
+            }
+            tmp.renameTo(File(context.filesDir, ARCHIVO))
+        }
+
+        fun cargar(context: Context, gf: GeometryFactory): Datos? {
+            val archivo = File(context.filesDir, ARCHIVO)
+            if (!archivo.exists()) return null
+            return try {
+                DataInputStream(BufferedInputStream(FileInputStream(archivo))).use { inp ->
+                    if (inp.readInt() != VERSION) return null
+
+                    val wkb = ByteArray(inp.readInt()).also { inp.readFully(it) }
+                    val geometria = WKBReader(gf).read(wkb)
+
+                    val n = inp.readInt()
+                    val celdas = HashSet<Pair<Int, Int>>(n * 2)
+                    repeat(n) { celdas.add(inp.readInt() to inp.readInt()) }
+
+                    val json = ByteArray(inp.readInt()).also { inp.readFully(it) }
+                    Datos(geometria, celdas, String(json, Charsets.UTF_8))
+                }
+            } catch (e: Exception) {
+                null    // archivo corrupto o de otra versión: se recalcula desde cero
             }
         }
     }
