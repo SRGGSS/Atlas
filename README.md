@@ -24,6 +24,8 @@ Este es un ejemplo del resultado obtenido tras configurar los diferentes estilos
   <img src="docs/output.gif" width="400" />
 </p>
 
+📥 **[Descargar APK](../../releases/latest)**
+
 ---
 
 ## Funcionalidades
