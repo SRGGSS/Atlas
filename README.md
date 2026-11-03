@@ -1,72 +1,72 @@
 # Atlas
 
-**App Android de exploración urbana**: registra los lugares por los que pasas, revela el mapa con un sistema de *fog of war* y te permite crear y organizar tus propios puntos de interés.
+**Urban exploration app for Android**: it records the places you visit, reveals the map through a *fog of war* system, and lets you create and organize your own points of interest.
 
-Proyecto desarrollado como Trabajo Fin de Grado en Ingeniería Informática (UPV, 2025–2026). Calificación: 9.
+Developed as my Bachelor's Thesis in Computer Engineering (Universitat Politècnica de València, 2025–2026). Grade: 9/10.
 
-Capturas de las funcionalidades principales:
+Screenshots of the main features:
 
 <p align="center">
   <img src="docs/iconos_seleccion.png" width="400" />
 </p>
 
-### 🎨 Diferentes estilos
-La aplicación permite elegir entre distintos estilos visuales para personalizar el resultado.
+### Different styles
+The app lets you choose between different visual styles to customize the result.
 
 <p align="center">
   <img src="docs/diferentes_estilos.png" width="400" />
 </p>
 
-### 🚀 Resultado final
-Este es un ejemplo del resultado obtenido tras configurar los diferentes estilos e iconos.
+### Final result
+An example of the result after configuring different styles and icons.
 
 <p align="center">
-  <img src="docs/output.gif" width="400" />
+  <img src="docs/output.gif" width="300" />
 </p>
 
-📥 **[Descargar APK](../../releases/latest)**
+**[Download APK](../../releases/latest)**
 
 ---
 
-## Funcionalidades
+## Features
 
-- **Fog of war**: el mapa empieza cubierto y se va revelando según las zonas que visitas, también con la app en segundo plano.
-- **Puntos de interés personalizados**: marcadores con color e icono configurables, descripción, valoración de 0 a 5 estrellas, checklist de objetivos y contador de visitas.
-- **Plantillas**: define un tipo de marcador una vez y aplícalo a otros. Solo se sobrescriben los campos que la plantilla tiene rellenos.
-- **Capas**: organiza los marcadores en capas y muestra una o todas.
-- **Importación desde la galería**: las fotos con ubicación (EXIF) se convierten automáticamente en marcadores, de forma incremental.
-- **Información meteorológica** del lugar en la propia interfaz.
+- **Fog of war**: the map starts covered and is revealed as you visit new areas, even while the app runs in the background.
+- **Custom points of interest**: markers with configurable color and icon, description, 0–5 star rating, goal checklist and visit counter.
+- **Templates**: define a marker type once and apply it to others. Only the fields filled in the template are overwritten.
+- **Layers**: organize markers into layers and display one or all of them.
+- **Gallery import**: photos with location data (EXIF) are automatically turned into markers, incrementally.
+- **Weather information** for the location, shown directly in the interface.
 
-## Tecnologías
+## Tech stack
 
 | | |
 |---|---|
-| Lenguaje | Kotlin |
+| Language | Kotlin |
 | UI | Jetpack Compose |
-| Mapas | MapLibre (migrado desde Mapbox) |
-| Persistencia | Room |
-| Ubicación | Fused Location Provider · Activity Recognition API |
+| Maps | MapLibre (migrated from Mapbox) |
+| Persistence | Room |
+| Location | Fused Location Provider · Activity Recognition API |
 
-## Detalles técnicos destacados
+## Technical highlights
 
-### Seguimiento en segundo plano y consumo de batería
-Decisiones de diseño para el optimización de seguimiento:
-- La frecuencia de peticiones GPS se adapta al tipo de movimiento detectado (andar, correr, bici, vehículo), y el seguimiento no se activa si el dispositivo está quieto.
-- En segundo plano se guardan **puntos GPS en bruto** en vez de calcular celdas al vuelo. Al abrir la app, se **interpolan los huecos** entre puntos para obtener las celdas visitadas. Esto permite bajar la frecuencia de muestreo sin perder fidelidad en el mapa revelado.
-- El usuario puede elegir entre tres niveles de precisión/consumo: **Ahorro**, **Equilibrado** y **Alta**.
+### Background tracking and battery usage
+Design decisions to optimize tracking:
+- GPS request frequency adapts to the detected type of movement (walking, running, cycling, in a vehicle), and tracking does not start while the device is still.
+- In the background, **raw GPS points** are stored instead of computing cells on the fly. When the app is opened, **gaps between points are interpolated** to obtain the visited cells. This allows a lower sampling rate without losing accuracy in the revealed map.
+- Users can choose between three accuracy/battery levels: **Saver**, **Balanced** and **High**.
 
-### Migración de Mapbox a MapLibre
-La primera versión usaba el SDK de Mapbox, que factura por uso. Para que la app pudiera publicarse sin depender de ese coste, migré el motor cartográfico a **MapLibre**, un fork de código abierto, y recreé los estilos del mapa.
+### Migration from Mapbox to MapLibre
+The first version used the Mapbox SDK, which charges per use. So that the app could be published without depending on that cost, I migrated the map engine to **MapLibre**, an open-source fork, and recreated the map styles.
 
-### Persistencia
-Todos los datos (marcadores, plantillas, capas, celdas visitadas, puntos de ruta y ajustes) se guardan en **Room**. Esta versión sustituye a una anterior basada en DataStore + Gson.
+### Persistence
+All data (markers, templates, layers, visited cells, route points and settings) is stored with **Room**, replacing an earlier version based on DataStore + Gson.
 
-## Próximos pasos
+## Next steps
 
-- Cifrado de la base de datos local.
-- Exportación e importación de copias de seguridad.
-- Porcentaje explorado de cada ciudad o país.
+- Local database encryption.
+- Backup export and import.
+- Percentage explored of each city or country.
 
-## Autor
+## Author
 
 **Sergio García Serrano** · [LinkedIn](https://www.linkedin.com/in/sergio-garc%C3%ADa-serrano-550925233/) · [Email](mailto:sergiogarciaserrano61@gmail.com)
