@@ -155,7 +155,7 @@ fun activarUbicacion(context: Context, mapa: MapLibreMap, style: Style) {
 fun seguirUbicacion(mapa: MapLibreMap, inmediato: Boolean = false) {
     val lc = mapa.locationComponent
     if (!lc.isLocationComponentActivated) return
-    lc.setCameraMode(CameraMode.TRACKING, if (inmediato) 0L else 5000L, 16.0, null, 0.0, null)
+    lc.setCameraMode(CameraMode.TRACKING, if (inmediato) 0L else 750L, 16.0, null, 0.0, null)
 }
 
 
