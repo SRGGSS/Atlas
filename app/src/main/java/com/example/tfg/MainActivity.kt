@@ -57,6 +57,7 @@
     import android.os.Looper
     import android.provider.MediaStore
     import androidx.compose.foundation.BorderStroke
+    import androidx.compose.foundation.interaction.MutableInteractionSource
     import androidx.compose.foundation.layout.Arrangement
     import androidx.compose.foundation.layout.aspectRatio
     import androidx.compose.foundation.layout.defaultMinSize
@@ -69,6 +70,9 @@
     import androidx.compose.foundation.text.BasicTextField
     import androidx.compose.foundation.text.KeyboardActions
     import androidx.compose.foundation.verticalScroll
+    import androidx.compose.material.icons.Icons
+    import androidx.compose.material.icons.filled.Close
+    import androidx.compose.material.icons.filled.PhotoCamera
     import androidx.compose.material3.ButtonDefaults
     import androidx.compose.material3.Card
     import androidx.compose.material3.CardDefaults
@@ -76,6 +80,7 @@
     import androidx.compose.material3.DropdownMenu
     import androidx.compose.material3.DropdownMenuItem
     import androidx.compose.material3.HorizontalDivider
+    import androidx.compose.material3.Icon
     import androidx.compose.material3.IconButton
     import androidx.compose.material3.MaterialTheme
     import androidx.compose.material3.Surface
@@ -998,8 +1003,10 @@
                                             modifier = Modifier
                                                 .align(Alignment.TopStart)
                                                 .size(24.dp)
-                                                .clickable
-                                                {   //https://developer.android.com/guide/components/google-maps-intents?hl=es-419#kotlin_2
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null
+                                                ){   //https://developer.android.com/guide/components/google-maps-intents?hl=es-419#kotlin_2
                                                     val latitude = marker.Localizacion.latitude()
                                                     val longitude = marker.Localizacion.longitude()
 
@@ -1029,7 +1036,10 @@
                                             modifier = Modifier
                                                 .align(Alignment.TopEnd)
                                                 .size(28.dp)
-                                                .clickable {pointTocado = null}
+                                                .clickable (
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null
+                                                ){pointTocado = null}
                                         )
                                     }
 
@@ -1131,7 +1141,10 @@
                                             contentDescription = "Editar",
                                             modifier = Modifier
                                                 .size(22.dp)
-                                                .clickable {
+                                                .clickable (
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null
+                                                ){
                                                     val (color, icono) = decodificarEstilo(
                                                         marker.Estilo
                                                     )
@@ -1170,7 +1183,10 @@
                                             contentDescription = "Eliminar",
                                             modifier = Modifier
                                                 .size(22.dp)
-                                                .clickable {
+                                                .clickable (
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null
+                                                ){
                                                     marker.ImagenURL?.let { ruta ->
                                                         var indUlt = ruta.lastIndexOf('/')
                                                         var Despues = ruta.substring(indUlt + 1)
@@ -3091,10 +3107,24 @@
                                     contentColor = Color.Black
                                 )
                             ) {
-                                Text(
-                                    text = if (imagenURL==null) "📷" else "X",
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Box(
+                                    Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ){
+                                    Icon(
+                                        imageVector = Icons.Default.PhotoCamera,
+                                        contentDescription = "BotonImagen"
+                                    )
+
+                                    if (imagenURL!=null)
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "BotonImagen",
+                                            Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
                             }
 
 

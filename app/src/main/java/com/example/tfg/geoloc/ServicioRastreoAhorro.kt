@@ -165,7 +165,7 @@ class ServicioRastreoAhorro : Service() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID) //https://developer.android.com/develop/ui/compose/notifications/create-notification?hl=es-419
             .setContentTitle("Explorando el mapa")
             .setContentText("Guardando tu recorrido de forma optimizada...")
-            .setSmallIcon(R.drawable.brujula)
+            .setSmallIcon(R.drawable.icono_noti)
             .setOngoing(true)
             .build()
 
